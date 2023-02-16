@@ -385,7 +385,7 @@ exportfs
 
 Ahora, vamos a comprobar que funciona correctamente. Para ello, me loguaré con el usuario prueba2 desde el cliente Rocky, y los dos clientes Ubuntu:
 
-- CLiente Rocky:
+- Cliente Rocky:
 
    ![LDAP](capturas/21.png)
 

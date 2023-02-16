@@ -387,14 +387,14 @@ Ahora, vamos a comprobar que funciona correctamente. Para ello, me loguaré con 
 
 - CLiente Rocky:
 
-      ![LDAP](capturas/21.png)
+   ![LDAP](capturas/21.png)
 
 - Cliente Ubuntu (Charlie):
   
-      ![LDAP](capturas/22.png)
+   ![LDAP](capturas/22.png)
 
 - Cliente Ubuntu (Delta):
 
-      ![LDAP](capturas/23.png)
+   ![LDAP](capturas/23.png)
 
 Como podemos ver, funciona correctamente.

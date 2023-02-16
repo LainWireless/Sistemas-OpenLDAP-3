@@ -121,6 +121,11 @@ Vamos a copiar el certificado en el directorio /usr/local/share/ca-certificates/
 cp /etc/ssl/certs/gonzalonazareno.crt /usr/local/share/ca-certificates/
 ```
 
+Ahora tenemos que actualizar la lista de certificados:
+```bash
+update-ca-certificates
+```
+
 Este último paso lo he realizado en el servidor y en los clientes, para poder usar ldaps como cliente en todos.
 
 Con esto ya podemos ejecutar peticiones al servidor ldap usando SSL/TLS. Para probarlo, haremos primero una consulta especificando el uso de LDAPs en el propio servidor:
@@ -153,7 +158,7 @@ ldapsearch -x -b "dc=ivan,dc=gonzalonazareno,dc=org"
 ```
 ![LDAP3](capturas/10.png)
 
-Para hacer que el cliente use por defecto ldaps en lugar de ldap para realizar las conexiones, tenemos que volver a modificar el fichero de configuración del cliente, y añadir o modificar la siguiente línea (en el caso de Delta(Ubuntu)):
+Para hacer que el cliente use por defecto ldaps en lugar de ldap para realizar las conexiones, tenemos que volver a modificar el fichero de configuración del cliente, y añadir o modificar la siguiente línea (tanto en cliente Ubuntu como Rocky):
 ```bash
 nano /etc/ldap/ldap.conf
 
@@ -184,6 +189,24 @@ update-ca-certificates
 ```
 
 Antes cuando expliqué que podíamos configurar el servidor y el cliente para el uso estricto o no estricto de ldaps, ya comprobamos que la busqueda funciona correctamente, así que ahora vamos a ver si el inicio de sesión funciona correctamente.
+
+Dijimos que teníamos que configurar este archivo en el cliente:
+```bash
+nano /etc/ldap/ldap.conf
+
+BASE dc=ivan,dc=gonzalonazareno,dc=org
+URI ldaps://alfa.ivan.gonzalonazareno.org
+```
+
+Pero esto no servirá para hacer que el cliente use ldaps al loguearse, ya que el cliente no tiene configurado el inicio de sesión. Para ello, deberemos modificar el archivo:
+```bash
+nano /etc/ldap.conf
+
+BASE dc=ivan,dc=gonzalonazareno,dc=org
+URI ldaps://alfa.ivan.gonzalonazareno.org
+```
+
+Una vez hecho esto, nuestro cliente ya está preparado para usar ldaps al iniciar sesión.
 
 Como esas comprobaciones anteriormente las hicimos en el client Delta, ahora lo vamos a hacer en el cliente Charlie(Ubuntu también).
 
@@ -231,7 +254,7 @@ nano /etc/openldap/ldap.conf
 ```
 ```bash
 BASE dc=ivan,dc=gonzalonazareno,dc=org
-URI ldap://alfa.ivan.gonzalonazareno.org
+URI ldaps://alfa.ivan.gonzalonazareno.org
 ```
 
 Finalmente, para permitir que el usuario prueba acceda al home del usuario prueba, deberemos editar el archivo de configuración de PAM para permitir la autenticación de usuarios LDAP. El archivo de configuración de PAM se llama /etc/pam.d/common-session y debe contener la siguiente línea: 
@@ -271,7 +294,7 @@ id_provider = ldap
 autofs_provider = ldap
 auth_provider = ldap
 chpass_provider = ldap
-ldap_uri = ldap://alfa.ivan.gonzalonazareno.org
+ldap_uri = ldaps://alfa.ivan.gonzalonazareno.org
 ldap_search_base = dc=ivan,dc=gonzalonazareno,dc=org
 ldap_id_use_start_tls = True
 ldap_tls_cacertdir = /etc/openldap/cacerts
@@ -284,6 +307,11 @@ domains = default
 
 [nss]
 homedir_substring = /home/nfs
+```
+
+Acto seguido, copiaremos el certificado en el directorio /etc/openldap/cacerts, en este caso haríamos lo siguiente:
+```bash
+cp gonzalonazareno.crt /etc/openldap/cacerts
 ```
 
 Ahora, reiniciamos los servicios y los habilitamos:
@@ -339,3 +367,34 @@ Y vamos a comprobar que ha funcionado correctamente desde el servidor Alfa:
 ![LDAP](capturas/20.png)
 
 Hasta aquí la configuración del cliente Rocky.
+
+### Configurar el Servidor para que los usuarios puedan iniciar sesión sin ser root
+
+En la primera practica de LDAP, no configuré el servidor NFS(Alfa) para que brindara el servicio de inicio de sesión sin ser root. Para ello, debemos editar el archivo de configuración de NFS:
+```bash
+/etc/exports
+
+/home/nfs              *(rw,fsid=0,subtree_check,no_root_squash)
+```
+
+Ahora, reiniciamos el servicio:
+```bash
+systemctl restart nfs-kernel-server
+exportfs
+```
+
+Ahora, vamos a comprobar que funciona correctamente. Para ello, me loguaré con el usuario prueba2 desde el cliente Rocky, y los dos clientes Ubuntu:
+
+- CLiente Rocky:
+
+      ![LDAP](capturas/21.png)
+
+- Cliente Ubuntu (Charlie):
+  
+      ![LDAP](capturas/22.png)
+
+- Cliente Ubuntu (Delta):
+
+      ![LDAP](capturas/23.png)
+
+Como podemos ver, funciona correctamente.
